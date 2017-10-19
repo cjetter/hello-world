@@ -1,36 +1,39 @@
 ###
-# Program to record DHT sensor data within SQLite database
+# Program to verify existence of databases on startup of pi and record DHT sensor data within SQLite database for later transfer to server
 ###
 
+# import libraries
 #import Adafruit_DHT
 import time as t
 import sqlite3
-from random import randrange  ## TO BE DELETED
+from random import randrange                                                                    ### DELETE AFTER TESTING
 
-#create database
-filepath0='/Users/Apple/Documents/Programming/Python/Other Projects/Greenhouse/DHT.sqlite'
+#create database and establish connection to write to DB
+filepath='/Users/Apple/Documents/Programming/Python/Other Projects/Greenhouse/NEW/DHT.sqlite'   ### DELETE AFTER TESTING
 #filepath='/Users/Apple/Adafruit_Python_DHT/tito/SQL_Log/DHT.sqlite'
-connection = sqlite3.connect(filepath0)
+connection = sqlite3.connect(filepath)
 cur = connection.cursor()
-cur.execute('''
-CREATE TABLE IF NOT EXISTS LogData (DateTime TEXT PRIMARY KEY NOT NULL UNIQUE,
-Humidity REAL NOT NULL,
-Temperature REAL NOT NULL)''')
 
-#loop to record temp and humidity every min
-while True:
-    #hi, ti = Adafruit_DHT.read_retry(22,4) 
-    hi, ti = randrange(40,80),randrange(1,4)  ### TO DELETE
-    #ho, to = Adafruit_DHT.read_retry(22,17) --for 2 sensors
-    datetime = t.strftime("%m/%d/%Y %H:%M:%S", t.localtime())  
-    #hora = "%d/%d/%d,%d:%d:%d" %(date[1],date[2],date[0],date[3],date[4],date[5])
-    #value =(hora,hi/100,ti,ho/100,to) -- for 2 sensors
-    value =(datetime,hi/100,ti)
-    print (value)
 
-    #add reading to database
-    cur.execute('''
-    INSERT INTO LogData (DateTime, Temperature, Humidity)
-    VALUES ( ?, ?, ?)''', (datetime, ti, hi/100))
-    connection.commit()
-    t.sleep(5)
+# define database tables and column / data types and create table or verify table existence
+# inside temp table
+cur.execute('''CREATE TABLE IF NOT EXISTS {} (DateTime TEXT PRIMARY KEY NOT NULL,
+               {} {} NOT NULL)'''.format('Temperature','Temperature','REAL'))
+# inside humidity table
+cur.execute('''CREATE TABLE IF NOT EXISTS {} (DateTime TEXT PRIMARY KEY NOT NULL,
+               {} {} NOT NULL)'''.format('Humidity','Humidity','REAL'))
+
+# collect datetime stamp and sensor readings
+datetime = t.strftime("%m/%d/%Y %H:%M:%S", t.localtime())    # generate datetime stamp
+#hi, ti = Adafruit_DHT.read_retry(22,4)                     # inside humidity / temp reading
+hi, ti = randrange(40,80),randrange(1,4)                                                      ### DELETE AFTER TESTING
+#ho, to = Adafruit_DHT.read_retry(22,17)                    # outside temp / humidity reading
+
+# print live stream of values
+value =(datetime,hi/100,ti)
+print (value)
+
+#add reading to database
+cur.execute('''INSERT INTO {} (DateTime,{}) VALUES (?, ?)'''.format('Temperature','Temperature'), (datetime, ti))
+cur.execute('''INSERT INTO {} (DateTime,{}) VALUES (?, ?)'''.format('Humidity','Humidity'), (datetime, hi))
+connection.commit()
